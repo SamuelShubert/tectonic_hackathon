@@ -1,0 +1,95 @@
+[
+  {
+    "id": "sofie.maes",
+    "name": "Sofie Maes",
+    "role": "Payroll Expert BE",
+    "countries": [
+      "BE"
+    ],
+    "topics": [
+      "holiday pay",
+      "end-of-year premium",
+      "cutoffs"
+    ],
+    "status": "active"
+  },
+  {
+    "id": "hanne.peeters",
+    "name": "Hanne Peeters",
+    "role": "Legal & Social Law Specialist BE",
+    "countries": [
+      "BE"
+    ],
+    "topics": [
+      "sick leave",
+      "remote work allowance"
+    ],
+    "status": "active"
+  },
+  {
+    "id": "lukas.becker",
+    "name": "Lukas Becker",
+    "role": "Payroll Expert DE",
+    "countries": [
+      "DE"
+    ],
+    "topics": [
+      "sick pay",
+      "social insurance"
+    ],
+    "status": "active"
+  },
+  {
+    "id": "jens.wouters",
+    "name": "Jens Wouters",
+    "role": "Payroll Consultant BE",
+    "countries": [
+      "BE"
+    ],
+    "topics": [
+      "client portfolio",
+      "PC 118",
+      "PC 200"
+    ],
+    "status": "leaving 2026-10-15"
+  },
+  {
+    "id": "nora.janssens",
+    "name": "Nora Janssens",
+    "role": "Team Lead Consulting",
+    "countries": [
+      "BE",
+      "NL"
+    ],
+    "topics": [
+      "handover",
+      "process"
+    ],
+    "status": "active"
+  },
+  {
+    "id": "pieter.claes",
+    "name": "Pieter Claes",
+    "role": "Former Payroll Expert BE",
+    "countries": [
+      "BE"
+    ],
+    "topics": [
+      "holiday pay"
+    ],
+    "status": "left company 2024-06"
+  },
+  {
+    "id": "legal.team",
+    "name": "Legal Team",
+    "role": "Group Legal",
+    "countries": [
+      "ALL"
+    ],
+    "topics": [
+      "retention",
+      "compliance"
+    ],
+    "status": "active"
+  }
+]

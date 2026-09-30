@@ -1,0 +1,48 @@
+{
+  "question": "When do I pay double holiday pay for Brouwerij Van de Leie?",
+  "context": { "user": "arne.goossens", "country": "BE", "as_of_date": "2026-09-30" },
+  "answer": {
+    "answer": "For Brouwerij Van de Leie, double holiday pay is advanced to the April payroll, based on a company agreement. This overrides the default May/June timing in the Belgian policy.",
+    "answer_status": "answered",
+    "winning_source_id": "E2",
+    "cited_source_ids": ["E2", "DOC-010", "DOC-001"],
+    "conflicts": [
+      { "source_ids": ["DOC-001", "E2"], "summary": "Policy says May/June; the client agreement says April.", "resolved": true, "resolution": "Client-specific agreement overrides the default policy (DOC-001 allows this)." }
+    ],
+    "exceptions": [
+      { "source_ids": ["E2", "DOC-010"], "summary": "Client agreement advances double holiday pay to April every year." }
+    ]
+  },
+  "confidence": {
+    "level": "Medium",
+    "reasons": [
+      "Exception found only in an email and a draft note",
+      "Only knowledge holder (jens.wouters) leaves 2026-10-15"
+    ],
+    "action": "Verify with the client file and capture the exception before 15 Oct."
+  },
+  "ask_expert": { "id": "jens.wouters", "role": "Payroll Consultant BE", "why": "Only knowledge holder of this exception, leaves 15 Oct. Then Sofie Maes (Payroll Expert BE)." },
+  "sources": [
+    { "id": "E2", "title": "Email: RE: holiday pay timing", "source_type": "email", "owner": "els@brouwerij-vandeleie.example", "last_updated": "2025-03-14", "verdict": "warn", "rules": [
+      { "rule": "authority", "status": "info", "label": "Email from the client (external)" },
+      { "rule": "freshness", "status": "warn", "label": "18 months old; emails should be confirmed after 18 months" }
+    ] },
+    { "id": "DOC-010", "title": "Client note – Brouwerij Van de Leie (fictional)", "source_type": "client_note", "owner": "jens.wouters", "last_updated": "2025-03-18", "verdict": "warn", "rules": [
+      { "rule": "status", "status": "warn", "label": "Draft, never made official" },
+      { "rule": "handover_risk", "status": "warn", "label": "Owner leaves 2026-10-15" },
+      { "rule": "freshness", "status": "warn", "label": "Last updated 18 months ago" }
+    ] },
+    { "id": "DOC-001", "title": "Belgium – Double Holiday Pay (White-collar)", "source_type": "policy", "owner": "sofie.maes", "last_updated": "2026-06-12", "verdict": "pass", "rules": [
+      { "rule": "authority", "status": "info", "label": "Official policy" },
+      { "rule": "freshness", "status": "pass", "label": "Updated 3 months ago" },
+      { "rule": "owner", "status": "pass", "label": "Owner sofie.maes is active" }
+    ] },
+    { "id": "DOC-002", "title": "Holiday pay Belgium", "source_type": "policy", "owner": "pieter.claes", "last_updated": "2023-02-01", "verdict": "fail", "rules": [
+      { "rule": "superseded", "status": "fail", "label": "Replaced by DOC-001, don't use" },
+      { "rule": "owner", "status": "warn", "label": "Owner left in 2024-06" }
+    ] }
+  ],
+  "excluded_sources": [
+    { "id": "DOC-005", "title": "Sick Pay – Continued Remuneration", "reason": "Applies to DE, you are working on BE" }
+  ]
+}

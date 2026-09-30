@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TrustLens</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">TrustLens</span>
+      <span class="brand-tag">Find it. Understand it. Trust it.</span>
+    </div>
+    <div class="context" id="context">Loading context…</div>
+  </header>
+
+  <main class="wrap">
+    <p class="mock-banner" id="mock-banner" hidden>Mock mode: showing a sample response, not the live API.</p>
+
+    <form class="ask" id="ask-form" autocomplete="off">
+      <label for="question" class="ask-label">Ask a payroll question</label>
+      <div class="ask-row">
+        <textarea id="question" name="question" rows="2" maxlength="500"
+          placeholder="e.g. When do I pay double holiday pay for Brouwerij Van de Leie?"></textarea>
+        <button type="submit" id="ask-btn">Ask</button>
+      </div>
+      <div class="ask-meta">
+        <div class="chips" id="chips"></div>
+        <span class="counter" id="counter">0 / 500</span>
+      </div>
+    </form>
+
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+
+    <section id="result" class="result" hidden>
+      <div class="grid-top">
+        <article class="card answer-card">
+          <h2 class="card-title">Answer</h2>
+          <p class="answer-text" id="answer-text"></p>
+          <p class="cited" id="cited"></p>
+        </article>
+
+        <article class="card confidence-card" id="confidence-card">
+          <h2 class="card-title">Confidence</h2>
+          <div class="level" id="level"></div>
+          <ul class="reasons" id="reasons"></ul>
+          <p class="action" id="action"></p>
+        </article>
+      </div>
+
+      <article class="card expert-card" id="expert-card" hidden>
+        <h2 class="card-title">Still unsure? Ask</h2>
+        <p class="expert-name" id="expert-name"></p>
+        <p class="expert-why" id="expert-why"></p>
+      </article>
+
+      <article class="card" id="findings-card" hidden>
+        <h2 class="card-title">What we checked across sources</h2>
+        <ul class="findings" id="findings"></ul>
+      </article>
+
+      <section>
+        <h2 class="section-title">Sources and trust signals</h2>
+        <div class="sources" id="sources"></div>
+      </section>
+
+      <details class="excluded" id="excluded" hidden>
+        <summary id="excluded-summary">Excluded sources</summary>
+        <ul id="excluded-list"></ul>
+      </details>
+    </section>
+  </main>
+
+  <footer class="foot">Synthetic demo data · Tectonic Hackathon 2026 · SD Worx challenge</footer>
+</body>
+</html>

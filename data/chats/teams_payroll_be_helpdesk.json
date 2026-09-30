@@ -1,0 +1,42 @@
+{
+  "channel": "#payroll-be-helpdesk",
+  "note": "SYNTHETIC",
+  "messages": [
+    {
+      "id": "T1",
+      "author": "jens.wouters",
+      "ts": "2026-09-12T10:14:00+02:00",
+      "text": "Heads up: for our PC 200 clients the end-of-year premium is paid in a SEPARATE run on 20 Dec this year, not with the regular December payroll."
+    },
+    {
+      "id": "T2",
+      "author": "lotte.devos",
+      "ts": "2026-09-12T10:31:00+02:00",
+      "text": "Is that official? The procedure doc still says December regular payroll, cutoff 15 Dec."
+    },
+    {
+      "id": "T3",
+      "author": "jens.wouters",
+      "ts": "2026-09-12T10:40:00+02:00",
+      "text": "Agreed with Sofie in a call, doc not updated yet."
+    },
+    {
+      "id": "T4",
+      "author": "arne.goossens",
+      "ts": "2026-09-18T15:02:00+02:00",
+      "text": "Quick q: double holiday pay is 85% right? Found it in the holiday pay doc."
+    },
+    {
+      "id": "T5",
+      "author": "lotte.devos",
+      "ts": "2026-09-18T15:09:00+02:00",
+      "text": "I think that's the old one... not sure which version is current tbh."
+    },
+    {
+      "id": "T6",
+      "author": "arne.goossens",
+      "ts": "2026-09-25T09:47:00+02:00",
+      "text": "Anyone know who owns the NL sick leave doc? It hasn't been touched since 2024."
+    }
+  ]
+}
