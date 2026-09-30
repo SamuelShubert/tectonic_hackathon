@@ -1,20 +1,16 @@
 ---
-id: "DOC-004"
-title: "Netherlands \u2013 Sick Leave Salary Continuation"
-country: "NL"
-domain: "payroll"
+id: DOC-004
+title: Netherlands sick leave payroll handling
+country: NL
+domain: sick_leave
 version: "1.0"
-status: "current"
-owner: ""
-last_updated: "2024-04-03"
-source: "Teams/Files/Payroll-NL"
+status: current
+owner:
+last_updated: 2024-04-03
+source: SharePoint / Payroll NL
 ---
+> SYNTHETIC DEMO DATA. Fictional content for a hackathon demo. Not legal or payroll advice.
 
-> SYNTHETIC DEMO DATA for Tectonic Hackathon. Not real SD Worx content, not legal or payroll advice.
+# Sick leave (Netherlands)
 
-# Netherlands – Sick leave salary continuation
-
-- Employer continues at least **70%** of salary for up to **104 weeks**.
-- Many collective agreements top up to 100% in year 1. Check the client CAO.
-
-(No owner assigned. Last reviewed April 2024.)
+Employers continue paying 70% of salary during sick leave for up to 104 weeks.

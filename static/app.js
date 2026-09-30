@@ -160,7 +160,7 @@ function renderExpert(data) {
   const e = data.ask_expert;
   $("expert-card").hidden = !e;
   if (!e) return;
-  $("expert-name").textContent = personName(e.id);
+  $("expert-name").textContent = e.name || personName(e.id);
   $("expert-role").textContent = e.role || "";
   $("expert-why").textContent = e.why || "";
 }
@@ -383,7 +383,7 @@ async function ask(question) {
   try {
     let res;
     if (isMock) {
-      res = await fetch("sample_response.json", { cache: "no-store" });
+      res = await fetch("/static/sample_response.json", { cache: "no-store" });
     } else {
       res = await fetch("/api/ask", {
         method: "POST",
@@ -393,7 +393,7 @@ async function ask(question) {
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setStatus(data.error || "Something went wrong. Please try again.", true);
+      setStatus(data.detail || data.error || "Something went wrong. Please try again.", true);
       return;
     }
     setStatus("");
@@ -413,7 +413,7 @@ async function loadContext() {
     const res = await fetch("/api/context");
     const c = await res.json();
     if (c.as_of_date) state.asOf = c.as_of_date;
-    ctx.textContent = `${c.name}, ${c.country}, as of ${formatDate(c.as_of_date)}`;
+    ctx.textContent = `${personName(c.user)}, ${c.country}, as of ${formatDate(c.as_of_date)}`;
   } catch {
     ctx.textContent = `Arne Goossens, BE, as of ${formatDate(FALLBACK_AS_OF)}`;
   }
@@ -442,7 +442,7 @@ function init() {
   $("ask-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const text = q.value.trim();
-    if (!text) { setStatus("Type a question first.", true); return; }
+    if (text.length < 3) { setStatus("Type a question of at least 3 characters.", true); return; }
     ask(text);
   });
 

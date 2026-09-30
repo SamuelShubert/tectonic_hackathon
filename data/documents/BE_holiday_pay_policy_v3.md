@@ -1,30 +1,19 @@
 ---
-id: "DOC-001"
-title: "Belgium \u2013 Double Holiday Pay (White-collar)"
-country: "BE"
-domain: "payroll"
+id: DOC-001
+title: Belgian double holiday pay policy v3
+country: BE
+domain: holiday_pay
 version: "3.2"
-status: "current"
-owner: "sofie.maes"
-last_updated: "2026-06-12"
-source: "SharePoint/Payroll-BE/Policies"
-supersedes: "DOC-002"
+status: current
+owner: sofie.maes
+last_updated: 2026-06-12
+source: SharePoint / Payroll BE / Policies
+supersedes: DOC-002
 ---
+> SYNTHETIC DEMO DATA. Fictional content for a hackathon demo. Not legal or payroll advice.
 
-> SYNTHETIC DEMO DATA for Tectonic Hackathon. Not real SD Worx content, not legal or payroll advice.
+# Double holiday pay (Belgium, white-collar employees)
 
-# Belgium – Double Holiday Pay (White-collar employees)
-
-## Rule
-Double holiday pay equals **92%** of the gross monthly salary of the month in which the holiday is taken, computed on the reference year.
-
-## Timing
-- Paid with the **May or June** payroll, when the employee takes their main holiday.
-- For leavers: paid as **exit holiday pay** with the final payroll.
-
-## Exceptions
-- Client-specific company agreements (CAO/CCT) can advance payment. Check the client note before applying the default.
-
-## Change log
-- 3.2 (2026-06): clarified leaver treatment.
-- 3.0 (2025-01): replaced v2.0. The 85% figure in v2 was wrong for the current reference year.
+Double holiday pay is 92% of the gross monthly salary. It is paid with the May or June payroll.
+Employees who leave the company receive their holiday pay at exit.
+A client-specific company agreement can advance the payment date. Always check the client file for exceptions.

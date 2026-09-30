@@ -1,19 +1,16 @@
 ---
-id: "DOC-006"
-title: "Belgium \u2013 Guaranteed Salary During Sick Leave"
-country: "BE"
-domain: "payroll"
+id: DOC-006
+title: Guaranteed salary during sick leave Belgium
+country: BE
+domain: sick_leave
 version: "2.0"
-status: "current"
-owner: "hanne.peeters"
-last_updated: "2026-01-15"
-source: "SharePoint/Payroll-BE/Policies"
+status: current
+owner: hanne.peeters
+last_updated: 2026-01-15
+source: SharePoint / Legal BE
 ---
+> SYNTHETIC DEMO DATA. Fictional content for a hackathon demo. Not legal or payroll advice.
 
-> SYNTHETIC DEMO DATA for Tectonic Hackathon. Not real SD Worx content, not legal or payroll advice.
+# Guaranteed salary (Belgium, white-collar employees)
 
-# Belgium – Guaranteed salary during sick leave
-
-- Employer pays guaranteed salary for the first **30 days** of incapacity (period structure depends on status).
-- From day 31: health insurance fund takes over.
-- Relapse within 14 days = same incapacity period.
+A Belgian employee on sick leave receives 100% guaranteed salary, paid by the employer, for the first 30 days of sick leave.

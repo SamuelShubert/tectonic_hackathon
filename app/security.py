@@ -21,7 +21,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 SECURITY_HEADERS = {
     b"content-security-policy": (
-        b"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+        b"default-src 'self'; script-src 'self'; style-src 'self';"
         b"img-src 'self' data:; object-src 'none'; base-uri 'none'; "
         b"frame-ancestors 'none'; form-action 'self'"
     ),

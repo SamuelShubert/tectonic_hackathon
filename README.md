@@ -1,72 +1,70 @@
 # TrustLens
 
-**An explainable confidence model for organisational knowledge.**
-Built at the Tectonic Hackathon (30 Sep 2026) for the SD Worx challenge *"Unlock the Knowledge Within – Find it. Understand it. Trust it."*
+**An explainable confidence model for organisational knowledge.** Built for the SD Worx challenge at the Tectonic Hackathon (30 September 2026).
 
-A payroll consultant asks a question. TrustLens answers it **and shows why they can trust the answer, or why they can't yet**: which sources it used, whether they are current, official, owned by someone still at the company, and relevant for their country; where sources disagree; which exceptions apply; and who to ask.
+A payroll consultant asks a question. TrustLens answers it *and* shows why they can or can't rely on that answer: which sources are current, owned, official and for the right country; where sources conflict; which client exceptions exist; and who to ask when documents are not enough.
 
-> **Core principle: the LLM extracts, the code decides.**
-> Python rules judge each source from its metadata. The LLM reads the content and reports the answer, conflicts and exceptions as JSON. Python then computes the confidence (High / Medium / Low) and picks the expert, so every "why Medium?" points to a specific rule.
+> All data in `data/` is **synthetic and fictional**. It is not legal or payroll advice.
 
-## How to run
+## Core principle: the LLM extracts, the code decides
 
-Requires Python 3.10+.
+| Layer | What it does | Deterministic? |
+|---|---|---|
+| Rules (`engine/rules.py`) | Checks metadata: country, supersession, freshness, status, owner, handover risk, authority | Yes |
+| LLM (`engine/llm.py`) | Reads content: writes the answer, reports conflicts and exceptions as JSON | No, so its output is validated |
+| Confidence (`engine/confidence.py`) | Turns rules + LLM findings into High / Medium / Low, reasons, action, expert | Yes |
+
+The LLM never chooses the confidence level or the person to ask. If it picks a superseded document as the winner, the rules fail that source and confidence drops to Low.
+
+## Run it
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env               # then fill in your values; never commit .env
-uvicorn app.main:app --port 8000
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+cp .env.example .env            # add GEMINI_API_KEY, or leave empty for offline mode
+python -m pytest -q             # 31 tests, no network needed
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-server-header
 ```
 
-Open http://localhost:8000.
-Open http://localhost:8000/?mock=1 to see the UI with a sample response, without the API or Gemini.
-
-### Gemini (Vertex AI)
 ```bash
-gcloud auth application-default login
-gcloud config set project <your-project-id>
-```
-Set `GOOGLE_CLOUD_PROJECT` in `.env`. Alternatively use a Google AI Studio key (`GOOGLE_API_KEY`, and `GOOGLE_GENAI_USE_VERTEXAI=false`).
-
-## Project structure
-
-```
-app/
-  config.py      server-side context (demo user Arne, BE, as_of_date) and settings
-  loader.py      normalizes documents, chats and emails into one Source shape
-  retrieve.py    keyword-overlap retrieval (swappable; embeddings slot in at scale)
-  rules.py       trust rules, source verdicts, confidence, expert selection
-  llm.py         Gemini call returning structured JSON (swappable model)
-  main.py        FastAPI app: POST /api/ask, GET /api/context, static frontend
-static/          index.html, app.js, style.css, sample_response.json (mock mode)
-data/            synthetic demo dataset (see data/DATASET.md)
-docs/BUILD_PLAN.md   frozen contracts, rules, acceptance tests, timeline
+curl -s -X POST localhost:8000/api/ask -H 'content-type: application/json' \
+  -d '{"question": "When do I pay double holiday pay for Brouwerij Van de Leie?"}'
 ```
 
-Pipeline for `POST /api/ask {"question": "..."}`:
-retrieve → rules per source → out-of-country sources moved to "excluded" (shown, not hidden) → LLM → validation (unknown source IDs dropped) → confidence + expert (code) → response.
+Without an API key the engine runs in **offline mode**: no generated answer, but every trust signal, exclusion and expert suggestion still works.
 
-## Data
+## Project layout
 
-All data in `data/` is **synthetic and fictional**, created for this hackathon. It contains 12 policy/procedure/client documents, a Teams channel export, 3 emails and an expert directory, with deliberately planted trust problems: an outdated duplicate with a wrong value, an owner who left, a chat that contradicts an official procedure, a client exception that exists only in an email, a knowledge holder about to leave, a mislabelled Germany-only file, and a document with no owner.
+```
+app/        FastAPI entry point + HTTP security middleware (thin, no logic)
+engine/     The trust engine (no web framework dependency)
+  models.py       strict, immutable data models
+  config.py       env settings + rules.yaml loading (safe_load, validated)
+  loader.py       loads documents/chats/emails into one Source shape
+  rules.py        Layer 1: metadata rules
+  retrieval.py    keyword retrieval (swappable)
+  llm.py          Layer 2: Gemini adapter, prompt, output validation (swappable)
+  confidence.py   deterministic confidence + expert routing
+  pipeline.py     TrustEngine.ask(): orchestrates the flow
+config/rules.yaml business thresholds (change without touching code)
+data/       synthetic dataset
+tests/      acceptance tests (demo questions) + security tests
+```
 
-## Security
+## Security measures
 
-- No secrets in the repo: keys only in `.env` (git-ignored); `.env.example` has placeholders.
-- User context (user, country, date) is fixed server-side. The API accepts **only** a `question` (max 500 chars, unknown fields rejected), so there is no user, country or document ID to tamper with (no IDOR by design).
-- Frontend renders all dynamic text with `textContent`, never `innerHTML` (LLM output and documents are untrusted).
-- Strict Content-Security-Policy, `X-Frame-Options: DENY`, `nosniff`, `no-referrer`.
-- CORS limited to localhost. API docs disabled unless `APP_DEBUG=true`.
-- Generic error messages to the client; details only in the server log.
-- LLM output is validated; hallucinated source IDs are dropped.
-- Pinned dependency versions.
+- **No client-controlled context.** The API accepts only `{"question": "..."}`. User, country and date are server config. Extra fields are rejected, so there's no IDOR surface.
+- **No client-supplied documents.** Sources load once, server-side, from a fixed directory into read-only structures.
+- **Loader hardening.** Path containment, symlinks skipped, file size limits, `yaml.safe_load` only, every record schema-validated, duplicate IDs abort startup.
+- **LLM boundary.** Sources are delimited and delimiter-like text is neutralised (prompt injection). Output is JSON-validated, length-capped, and unknown source IDs are dropped (hallucination guard). Failures degrade to "no answer" without leaking error details.
+- **HTTP.** CSP without inline scripts, `X-Frame-Options: DENY`, `nosniff`, no-referrer, body size limit (4 KB), per-client rate limit (protects LLM credits), generic error messages, no input echo, API docs off by default, no CORS, binds to localhost.
+- **Secrets.** API key only via `.env` (gitignored). It's excluded from `repr()` and never logged. Question text is never logged either.
+- **Dependencies.** Pinned. `pip-audit -r requirements.txt` reports no known vulnerabilities at the time of writing.
 
-## Unfinished / known limitations
+## What is unfinished
 
-- `rules.py`: only `country_match`, `superseded` and `authority` are implemented so far; freshness, status, owner and handover-risk rules and the full confidence logic are in progress.
-- `llm.py`: Gemini call in progress; until then the API returns "Answer unavailable" and shows the trust signals only.
-- Single fixed demo user (Arne, Belgium). No login.
-- Keyword retrieval only, sized for the demo dataset.
-- Runs locally; not deployed.
+- Retrieval is keyword-based (IDF-weighted). Embeddings or SD Worx enterprise search would replace `KeywordRetriever`.
+- Single fixed demo user. Production needs real authentication (SSO) with per-user country access, enforced server-side.
+- The rate limiter is in-memory and per-process. Production needs a shared store and a proxy-aware client IP.
+- The "capture this exception" action is a suggestion only. It doesn't write to the client file.
+- Document types are mapped by ID in `rules.yaml` because the source metadata has no type field.

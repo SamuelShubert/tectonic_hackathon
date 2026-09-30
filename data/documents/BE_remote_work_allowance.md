@@ -1,19 +1,16 @@
 ---
-id: "DOC-011"
-title: "Belgium \u2013 Structural Remote Work Allowance"
-country: "BE"
-domain: "payroll"
-version: "2026"
-status: "current"
-owner: "hanne.peeters"
-last_updated: "2026-04-02"
-source: "SharePoint/Payroll-BE/Policies"
+id: DOC-011
+title: Remote work allowance Belgium
+country: BE
+domain: allowances
+version: "1.3"
+status: current
+owner: hanne.peeters
+last_updated: 2026-04-02
+source: SharePoint / Legal BE
 ---
+> SYNTHETIC DEMO DATA. Fictional content for a hackathon demo. Not legal or payroll advice.
 
-> SYNTHETIC DEMO DATA for Tectonic Hackathon. Not real SD Worx content, not legal or payroll advice.
+# Remote work allowance
 
-# Belgium – Remote work allowance
-
-- Tax-free structural allowance up to an indexed monthly ceiling (demo value: **€157.83**).
-- Requires a written telework agreement.
-- Not cumulative with some other office-cost reimbursements.
+Demo ceiling for the remote work allowance: EUR 157.83 per month.

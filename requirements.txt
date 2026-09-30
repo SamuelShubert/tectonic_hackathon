@@ -1,5 +1,7 @@
+# Pinned so builds are reproducible and scanners audit exact versions.
 fastapi==0.142.2
-uvicorn==0.46.0
-pydantic==2.13.3
-python-dotenv==1.2.2
+uvicorn==0.54.0
+pydantic==2.13.5
+PyYAML==6.0.3
+python-dotenv==1.2.3
 google-genai==2.25.0

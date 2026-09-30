@@ -1,42 +1,13 @@
 {
-  "channel": "#payroll-be-helpdesk",
-  "note": "SYNTHETIC",
+  "_notice": "SYNTHETIC DEMO DATA. Fictional content for a hackathon demo.",
+  "channel": "payroll-be-helpdesk",
+  "country": "BE",
   "messages": [
-    {
-      "id": "T1",
-      "author": "jens.wouters",
-      "ts": "2026-09-12T10:14:00+02:00",
-      "text": "Heads up: for our PC 200 clients the end-of-year premium is paid in a SEPARATE run on 20 Dec this year, not with the regular December payroll."
-    },
-    {
-      "id": "T2",
-      "author": "lotte.devos",
-      "ts": "2026-09-12T10:31:00+02:00",
-      "text": "Is that official? The procedure doc still says December regular payroll, cutoff 15 Dec."
-    },
-    {
-      "id": "T3",
-      "author": "jens.wouters",
-      "ts": "2026-09-12T10:40:00+02:00",
-      "text": "Agreed with Sofie in a call, doc not updated yet."
-    },
-    {
-      "id": "T4",
-      "author": "arne.goossens",
-      "ts": "2026-09-18T15:02:00+02:00",
-      "text": "Quick q: double holiday pay is 85% right? Found it in the holiday pay doc."
-    },
-    {
-      "id": "T5",
-      "author": "lotte.devos",
-      "ts": "2026-09-18T15:09:00+02:00",
-      "text": "I think that's the old one... not sure which version is current tbh."
-    },
-    {
-      "id": "T6",
-      "author": "arne.goossens",
-      "ts": "2026-09-25T09:47:00+02:00",
-      "text": "Anyone know who owns the NL sick leave doc? It hasn't been touched since 2024."
-    }
+    {"id": "T1", "author": "jens.wouters", "date": "2026-09-12", "text": "Heads-up: PC 200 clients get the end-of-year premium in a separate payroll run on 20 December this year, not with the regular December payroll."},
+    {"id": "T2", "author": "lotte.devos", "date": "2026-09-12", "text": "Is that official? The procedure says the end-of-year premium goes with the December payroll, cutoff 15 December."},
+    {"id": "T3", "author": "jens.wouters", "date": "2026-09-12", "text": "Agreed with Sofie in a call. The procedure document is not updated yet."},
+    {"id": "T4", "author": "arne.goossens", "date": "2026-09-18", "text": "Quick check: double holiday pay is 85%, right?"},
+    {"id": "T5", "author": "lotte.devos", "date": "2026-09-18", "text": "That is probably the old holiday pay version, not sure which one is current."},
+    {"id": "T6", "author": "arne.goossens", "date": "2026-09-25", "text": "Who owns the NL sick leave doc? It has not been touched since 2024."}
   ]
 }

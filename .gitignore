@@ -1,22 +1,18 @@
-# Secrets – never commit
+# Secrets: never commit
 .env
-*.env
+.env.*
 !.env.example
 *.pem
 *.key
-service-account*.json
-credentials*.json
 
 # Python
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .venv/
 venv/
-env/
-.pytest_cache/
 
-# Editors / OS
-.vscode/
-.idea/
+# OS / editors
 .DS_Store
-Thumbs.db
+.idea/
+.vscode/

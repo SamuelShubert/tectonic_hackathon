@@ -1,176 +1,120 @@
-"""TrustLens API. OWNER: Samuel (P1).
+"""FastAPI entry point. Deliberately thin: all logic lives in the engine.
 
-POST /api/ask {"question": "..."} -> response contract 3.5
-Pipeline: retrieve -> rules per source -> split included/excluded -> LLM -> validate
-          -> confidence + expert (code decides, never the LLM).
+Run:  uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+Security decisions:
+- The API accepts ONE field: the question. User, country and date come from
+  server config, so there is no ID to tamper with (no IDOR surface) and no
+  way to claim another user's context.
+- There is no endpoint that returns a document by ID or path.
+- Validation errors and server errors return generic messages. FastAPI's
+  default 422 echoes the input back; we don't.
+- The question text is never logged (it may contain client personal data).
+- /docs and /openapi.json are off unless ENABLE_API_DOCS=true.
+- No CORS middleware: the frontend is served from the same origin, so no
+  cross-origin access is needed or allowed.
+- Binds to 127.0.0.1 by default (see README), not 0.0.0.0.
 """
-import logging
 
+from __future__ import annotations
+
+import logging
+import uuid
+from pathlib import Path
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
-from app import config, llm, retrieve, rules
-from app.loader import load_experts, load_sources
+from app.security import BodySizeLimitMiddleware, RateLimiter, SecurityHeadersMiddleware
+from engine import InvalidQuestion, TrustEngine, build_engine
+from engine.config import Settings, load_settings
+from engine.models import AskResponse
 
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("trustlens")
+log = logging.getLogger("trustlens.api")
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+MAX_BODY_BYTES = 4 * 1024
 
-SOURCES = load_sources()
-EXPERTS = load_experts()
-
-app = FastAPI(
-    title="TrustLens",
-    docs_url="/docs" if config.DEBUG else None,
-    redoc_url=None,
-    openapi_url="/openapi.json" if config.DEBUG else None,
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=config.ALLOWED_ORIGINS,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
-)
-
-
-@app.middleware("http")
-async def security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
-        "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
-    )
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "no-referrer"
-    return response
-
-
-# ---------- request model ----------
 
 class AskRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")  # no user/country/doc id accepted from the client
-    question: str = Field(min_length=1, max_length=config.MAX_QUESTION_CHARS)
-
-    @field_validator("question")
-    @classmethod
-    def not_blank(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
-            raise ValueError("empty question")
-        return v
+    model_config = ConfigDict(extra="forbid")  # any extra field (user, country...) = rejected
+    question: str = Field(min_length=3, max_length=500)
 
 
-# ---------- errors: generic to the client, details in the server log ----------
-
-@app.exception_handler(RequestValidationError)
-async def on_validation_error(request: Request, exc: RequestValidationError):
-    return JSONResponse(status_code=422, content={
-        "error": f"Invalid request: send only a question of 1 to {config.MAX_QUESTION_CHARS} characters."})
+def _error(status: int, message: str, request_id: str) -> JSONResponse:
+    return JSONResponse(status_code=status, content={"detail": message, "request_id": request_id})
 
 
-@app.exception_handler(Exception)
-async def on_error(request: Request, exc: Exception):
-    log.exception("Unhandled error")
-    return JSONResponse(status_code=500, content={"error": "Something went wrong. Please try again."})
+def create_app(engine: TrustEngine | None = None, settings: Settings | None = None) -> FastAPI:
+    settings = settings or load_settings()
+    engine = engine or build_engine(settings)
+    limiter = RateLimiter(limit=settings.rate_limit_per_minute)
 
+    docs = settings.enable_api_docs
+    app = FastAPI(
+        title="TrustLens",
+        docs_url="/docs" if docs else None,
+        redoc_url=None,
+        openapi_url="/openapi.json" if docs else None,
+    )
+    app.add_middleware(BodySizeLimitMiddleware, max_bytes=MAX_BODY_BYTES)
+    app.add_middleware(SecurityHeadersMiddleware)
 
-# ---------- helpers ----------
+    @app.exception_handler(RequestValidationError)
+    async def _validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+        return _error(422, "Invalid request: send {\"question\": \"...\"} (3-500 characters).",
+                      uuid.uuid4().hex[:12])
 
-def _validate_answer(raw, allowed_ids: set[str]) -> dict:
-    """Second guard on LLM output: known fields only, drop hallucinated source IDs."""
-    if not isinstance(raw, dict):
-        return llm.fallback_answer()
+    @app.exception_handler(Exception)
+    async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
+        request_id = uuid.uuid4().hex[:12]
+        log.exception("Unhandled error (request_id=%s)", request_id)  # details stay server-side
+        return _error(500, "Internal error", request_id)
 
-    def ids(values):
-        return [i for i in (values or []) if isinstance(i, str) and i in allowed_ids]
+    @app.get("/api/health")
+    def health() -> dict:
+        return {"status": "ok", "llm_enabled": settings.llm_enabled}
 
-    status = raw.get("answer_status")
-    answer = {
-        "answer": str(raw.get("answer") or llm.FALLBACK_TEXT)[:1000],
-        "answer_status": status if status in ("answered", "uncertain", "no_answer") else "no_answer",
-        "winning_source_id": raw.get("winning_source_id") if raw.get("winning_source_id") in allowed_ids else None,
-        "cited_source_ids": ids(raw.get("cited_source_ids")),
-        "conflicts": [],
-        "exceptions": [],
-    }
-    for c in raw.get("conflicts") or []:
-        if isinstance(c, dict) and len(ids(c.get("source_ids"))) >= 2:
-            answer["conflicts"].append({
-                "source_ids": ids(c.get("source_ids")),
-                "summary": str(c.get("summary") or "")[:300],
-                "resolved": bool(c.get("resolved")),
-                "resolution": str(c.get("resolution") or "")[:300],
-            })
-    for e in raw.get("exceptions") or []:
-        if isinstance(e, dict) and ids(e.get("source_ids")):
-            answer["exceptions"].append({
-                "source_ids": ids(e.get("source_ids")),
-                "summary": str(e.get("summary") or "")[:300],
-            })
-    return answer
+    @app.get("/api/context")
+    def context() -> dict:
+        # Read-only view of the server-side demo context, for the page header.
+        return {"user": settings.demo_user, "country": settings.demo_country,
+                "as_of_date": settings.as_of_date.isoformat()}
 
-
-def _public_expert(expert):
-    if not expert:
-        return None
-    return {k: expert.get(k) for k in ("id", "role", "why")}
-
-
-# ---------- API ----------
-
-@app.get("/api/context")
-def get_context():
-    user = EXPERTS.get(config.CONTEXT["user"])
-    return {**config.CONTEXT, "name": "Arne Goossens" if not user else user.get("name")}
-
-
-@app.post("/api/ask")
-def ask(req: AskRequest):
-    context = dict(config.CONTEXT)
-    retrieved = retrieve.retrieve(req.question, SOURCES, k=config.RETRIEVE_K)
-
-    included, excluded = [], []
-    for src in retrieved:
-        results = rules.evaluate_source(src, context, SOURCES, EXPERTS)
-        reason = rules.exclusion_reason(results)
-        if reason:
-            excluded.append({"id": src["id"], "title": src["title"], "reason": reason})
-        else:
-            included.append({**src, "verdict": rules.source_verdict(results), "rules": results})
-
-    if included:
+    @app.post("/api/ask", response_model=AskResponse)
+    def ask(body: AskRequest, request: Request):
+        request_id = uuid.uuid4().hex[:12]
+        client = request.client.host if request.client else "unknown"
+        if not limiter.allow(client):
+            return _error(429, "Too many requests, try again in a minute.", request_id)
         try:
-            raw = llm.ask_llm(req.question, included)
-        except Exception:
-            log.exception("LLM call failed")
-            raw = llm.fallback_answer()
-    else:
-        raw = llm.fallback_answer()
-    answer = _validate_answer(raw, {s["id"] for s in included})
+            response = engine.ask(body.question)
+        except InvalidQuestion as exc:
+            return _error(422, str(exc), request_id)
+        log.info("ask request_id=%s chars=%d confidence=%s",
+                 request_id, len(body.question), response.confidence.level.value)
+        return response
 
-    confidence = rules.compute_confidence(answer, included, context)
-    expert = rules.select_expert(answer, included, context, EXPERTS, req.question)
+    if STATIC_DIR.is_dir():
+        app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-    return {
-        "question": req.question,
-        "context": context,
-        "answer": answer,
-        "confidence": confidence,
-        "ask_expert": _public_expert(expert),
-        "sources": [
-            {"id": s["id"], "title": s["title"], "source_type": s["source_type"],
-             "owner": s["owner"], "last_updated": s["last_updated"],
-             "verdict": s["verdict"], "rules": s["rules"]}
-            for s in included
-        ],
-        "excluded_sources": excluded,
-    }
+        @app.get("/", include_in_schema=False)
+        def index():
+            index_file = STATIC_DIR / "index.html"
+            if index_file.is_file():
+                return FileResponse(index_file)
+            return JSONResponse({"detail": "Frontend not built yet"}, status_code=404)
+
+    return app
 
 
-# Static frontend last, so /api/* routes win.
-app.mount("/", StaticFiles(directory=config.STATIC_DIR, html=True), name="static")
+def _build_default_app() -> FastAPI:
+    load_dotenv()  # reads .env if present; real env vars take precedence
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    return create_app()
+
+
+app = _build_default_app()

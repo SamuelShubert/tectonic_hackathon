@@ -1,17 +1,16 @@
 ---
-id: "DOC-012"
-title: "Payroll Records Retention"
-country: "ALL"
-domain: "compliance"
-version: "1.1"
-status: "current"
-owner: "legal.team"
-last_updated: "2025-12-01"
-source: "SharePoint/Legal"
+id: DOC-012
+title: Data retention for payroll records
+country: ALL
+domain: compliance
+version: "1.0"
+status: current
+owner: legal.team
+last_updated: 2025-12-01
+source: SharePoint / Group Legal
 ---
+> SYNTHETIC DEMO DATA. Fictional content for a hackathon demo. Not legal or payroll advice.
 
-> SYNTHETIC DEMO DATA for Tectonic Hackathon. Not real SD Worx content, not legal or payroll advice.
+# Retention of payroll records
 
-# Payroll records retention
-
-Retention periods differ by country. Always apply the local country rule. When in doubt, the **longest** applicable period applies. Contact Legal for client-specific contractual retention.
+Apply the local retention rule for payroll records. When in doubt, use the longest applicable period.
