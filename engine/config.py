@@ -127,10 +127,18 @@ class Settings:
     enable_api_docs: bool
     # repr=False: the key never appears in logs, tracebacks or debug prints.
     gemini_api_key: str | None = field(default=None, repr=False)
+    # Vertex AI via Application Default Credentials (gcloud login), used when
+    # there is no API key. The project ID lives only in .env.
+    vertex_project: str | None = field(default=None, repr=False)
+    vertex_location: str = "us-central1"
+    # Any OpenAI-compatible provider (Groq, OpenRouter, ...), used when there is no Gemini key.
+    llm_api_key: str | None = field(default=None, repr=False)
+    llm_base_url: str = "https://api.groq.com/openai/v1"
+    llm_model: str = "openai/gpt-oss-120b"
 
     @property
     def llm_enabled(self) -> bool:
-        return bool(self.gemini_api_key)
+        return bool(self.gemini_api_key or self.llm_api_key or self.vertex_project)
 
 
 def load_settings() -> Settings:
@@ -153,6 +161,21 @@ def load_settings() -> Settings:
     if api_key and api_key.strip() in {"", "your-key-here", "changeme"}:
         api_key = None  # placeholder from .env.example: treat as "no key"
 
+    vertex_project = (os.getenv("GOOGLE_CLOUD_PROJECT") or "").strip() or None
+    if vertex_project and not re.fullmatch(r"[a-z][a-z0-9-]{4,61}[a-z0-9]", vertex_project):
+        raise ConfigError("GOOGLE_CLOUD_PROJECT is not a valid project ID")
+    vertex_location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+    if not re.fullmatch(r"[a-z0-9-]{2,40}", vertex_location):
+        raise ConfigError("GOOGLE_CLOUD_LOCATION is not a valid region")
+
+    llm_api_key = (os.getenv("LLM_API_KEY") or "").strip() or None
+    llm_base_url = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
+    if not llm_base_url.startswith("https://"):
+        raise ConfigError("LLM_BASE_URL must use https")  # the key must never travel in clear text
+    llm_model = os.getenv("LLM_MODEL", "openai/gpt-oss-120b")
+    if not re.fullmatch(r"[A-Za-z0-9._:/-]{1,120}", llm_model):
+        raise ConfigError("LLM_MODEL has invalid characters")
+
     return Settings(
         data_dir=Path(os.getenv("TRUSTLENS_DATA_DIR", PROJECT_ROOT / "data")),
         rules_path=Path(os.getenv("TRUSTLENS_RULES_PATH", PROJECT_ROOT / "config" / "rules.yaml")),
@@ -164,4 +187,9 @@ def load_settings() -> Settings:
         rate_limit_per_minute=_env_int("RATE_LIMIT_PER_MINUTE", 20, 1, 1000),
         enable_api_docs=_env_bool("ENABLE_API_DOCS", False),
         gemini_api_key=api_key,
+        vertex_project=vertex_project,
+        vertex_location=vertex_location,
+        llm_api_key=llm_api_key,
+        llm_base_url=llm_base_url,
+        llm_model=llm_model,
     )
