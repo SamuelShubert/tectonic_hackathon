@@ -9,62 +9,75 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
+    <a class="brand" href="./">
       <span class="brand-mark" aria-hidden="true"></span>
       <span class="brand-name">TrustLens</span>
-      <span class="brand-tag">Find it. Understand it. Trust it.</span>
-    </div>
-    <div class="context" id="context">Loading context…</div>
+    </a>
+    <p class="context" id="context">Loading context…</p>
   </header>
 
-  <main class="wrap">
+  <main class="page">
     <p class="mock-banner" id="mock-banner" hidden>Mock mode: showing a sample response, not the live API.</p>
 
-    <form class="ask" id="ask-form" autocomplete="off">
-      <label for="question" class="ask-label">Ask a payroll question</label>
-      <div class="ask-row">
-        <textarea id="question" name="question" rows="2" maxlength="500"
-          placeholder="e.g. When do I pay double holiday pay for Brouwerij Van de Leie?"></textarea>
-        <button type="submit" id="ask-btn">Ask</button>
-      </div>
-      <div class="ask-meta">
-        <div class="chips" id="chips"></div>
-        <span class="counter" id="counter">0 / 500</span>
-      </div>
-    </form>
-
-    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <section class="ask-section">
+      <form class="ask" id="ask-form" autocomplete="off">
+        <label for="question" class="ask-label">Ask a payroll question. See how sure you can be.</label>
+        <div class="ask-row">
+          <textarea id="question" name="question" rows="2" maxlength="500"
+            placeholder="When do I pay double holiday pay for Brouwerij Van de Leie?"></textarea>
+          <button type="submit" id="ask-btn">Check answer</button>
+        </div>
+        <div class="ask-meta">
+          <div class="chips" id="chips" aria-label="Example questions"></div>
+          <span class="counter" id="counter">0 / 500</span>
+        </div>
+      </form>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </section>
 
     <section id="result" class="result" hidden>
-      <div class="grid-top">
-        <article class="card answer-card">
-          <h2 class="card-title">Answer</h2>
-          <p class="answer-text" id="answer-text"></p>
-          <p class="cited" id="cited"></p>
-        </article>
+      <p class="handover" id="handover" hidden></p>
 
-        <article class="card confidence-card" id="confidence-card">
-          <h2 class="card-title">Confidence</h2>
-          <div class="level" id="level"></div>
+      <section class="verdict">
+        <div class="verdict-answer">
+          <p class="provenance" id="answer-prov"></p>
+          <p class="answer-text" id="answer-text"></p>
+          <div class="cited" id="cited"></div>
+        </div>
+        <aside class="verdict-confidence" id="confidence-card">
+          <p class="provenance" id="conf-prov"></p>
+          <div class="meter" id="meter" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <p class="level" id="level"></p>
           <ul class="reasons" id="reasons"></ul>
           <p class="action" id="action"></p>
-        </article>
-      </div>
+        </aside>
+      </section>
 
-      <article class="card expert-card" id="expert-card" hidden>
-        <h2 class="card-title">Still unsure? Ask</h2>
-        <p class="expert-name" id="expert-name"></p>
-        <p class="expert-why" id="expert-why"></p>
-      </article>
+      <section class="lens" id="lens" aria-labelledby="lens-title">
+        <div class="lens-head">
+          <h2 id="lens-title">Sources we checked</h2>
+          <p class="lens-hint">Select a source to see why we trust it, or don't.</p>
+        </div>
+        <div class="lens-grid">
+          <ol class="index" id="index"></ol>
+          <div class="stack" id="stack"></div>
+          <div class="inspector" id="inspector" aria-live="polite"></div>
+        </div>
+      </section>
 
-      <article class="card" id="findings-card" hidden>
-        <h2 class="card-title">What we checked across sources</h2>
-        <ul class="findings" id="findings"></ul>
-      </article>
-
-      <section>
-        <h2 class="section-title">Sources and trust signals</h2>
-        <div class="sources" id="sources"></div>
+      <section class="notes">
+        <div class="note-block" id="findings-block" hidden>
+          <h2>Conflicts and exceptions</h2>
+          <ul class="findings" id="findings"></ul>
+        </div>
+        <div class="note-block expert" id="expert-card" hidden>
+          <h2>Still unsure? Ask</h2>
+          <p class="expert-name" id="expert-name"></p>
+          <p class="expert-role" id="expert-role"></p>
+          <p class="expert-why" id="expert-why"></p>
+        </div>
       </section>
 
       <details class="excluded" id="excluded" hidden>
@@ -74,6 +87,6 @@
     </section>
   </main>
 
-  <footer class="foot">Synthetic demo data · Tectonic Hackathon 2026 · SD Worx challenge</footer>
+  <footer class="foot">Synthetic demo data. Tectonic Hackathon 2026, SD Worx challenge.</footer>
 </body>
 </html>
