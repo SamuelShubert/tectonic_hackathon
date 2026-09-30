@@ -1,0 +1,53 @@
+# TrustLens business rules.
+# These are business decisions, not code. Change them here; no code change needed.
+# The app validates this file at startup and refuses to start if it is invalid.
+
+# Most authoritative first. Every source type must be listed exactly once.
+authority_order:
+  - policy
+  - procedure
+  - client_note
+  - email
+  - chat
+  - unknown
+
+# A source older than this (relative to the as-of date) gets a "possibly outdated" warning.
+max_age_days:
+  policy: 365
+  procedure: 365
+  client_note: 365
+  email: 548      # ~18 months
+  chat: 183       # ~6 months
+  unknown: 183
+
+# Owner leaving within this many days of the as-of date = handover risk.
+handover_window_days: 30
+
+# How many sources retrieval returns per question.
+retrieval_top_k: 8
+
+# Content sent to the LLM per source is capped (cost + prompt-injection surface).
+max_content_chars_per_source: 3000
+
+# The document front matter has no type field, so documents are classified here.
+# Unlisted documents become "unknown" (lowest authority) instead of being guessed.
+doc_type_by_id:
+  DOC-001: policy
+  DOC-002: policy
+  DOC-003: procedure
+  DOC-004: policy
+  DOC-005: policy
+  DOC-006: policy
+  DOC-007: procedure
+  DOC-008: procedure
+  DOC-009: procedure
+  DOC-010: client_note
+  DOC-011: policy
+  DOC-012: policy
+
+# When the source owner cannot be asked (missing, left, leaving, external),
+# route to an active expert covering the country, preferring these roles in order.
+escalation_role_priority:
+  - Payroll Expert
+  - Legal & Social Law
+  - Team Lead

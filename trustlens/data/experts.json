@@ -1,0 +1,9 @@
+[
+  {"id": "sofie.maes", "name": "Sofie Maes", "role": "Payroll Expert BE", "countries": ["BE"], "status": "active"},
+  {"id": "hanne.peeters", "name": "Hanne Peeters", "role": "Legal & Social Law BE", "countries": ["BE"], "status": "active"},
+  {"id": "lukas.becker", "name": "Lukas Becker", "role": "Payroll Expert DE", "countries": ["DE"], "status": "active"},
+  {"id": "jens.wouters", "name": "Jens Wouters", "role": "Payroll Consultant BE", "countries": ["BE"], "status": "leaving", "leaving_date": "2026-10-15"},
+  {"id": "nora.janssens", "name": "Nora Janssens", "role": "Team Lead Consulting BE/NL", "countries": ["BE", "NL"], "status": "active"},
+  {"id": "pieter.claes", "name": "Pieter Claes", "role": "Former Payroll Expert BE", "countries": ["BE"], "status": "left", "left_date": "2024-06-30"},
+  {"id": "legal.team", "name": "Group Legal", "role": "Group Legal", "countries": ["BE", "NL", "DE"], "status": "active"}
+]
