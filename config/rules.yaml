@@ -44,6 +44,9 @@ doc_type_by_id:
   DOC-010: client_note
   DOC-011: policy
   DOC-012: policy
+  DOC-013: client_note
+  DOC-014: client_note
+  DOC-015: client_note
 
 # When the source owner cannot be asked (missing, left, leaving, external),
 # route to an active expert covering the country, preferring these roles in order.

@@ -132,6 +132,72 @@ button { cursor: pointer; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ---------- client switcher + company card ---------- */
+
+.client-row { display: flex; align-items: center; gap: 14px; margin: -8px 0 18px; }
+.client-label { font-size: 13px; color: var(--muted); }
+.switcher { position: relative; }
+.switcher-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  border: 1px solid var(--ink); background: var(--surface);
+  padding: 8px 12px 8px 14px; font-weight: 600; font-size: 15px;
+}
+.switcher-btn:hover, .switcher-btn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.switcher-btn .chevron { font-size: 16px; transition: transform 0.2s ease; }
+.switcher-btn[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+
+.switcher-panel {
+  position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: min(420px, 86vw);
+  background: var(--surface); border: 1px solid var(--ink);
+  box-shadow: 0 24px 48px -24px rgba(28, 27, 25, 0.45);
+}
+.switcher-panel input {
+  width: 100%; border: 0; border-bottom: 1px solid var(--line);
+  padding: 12px 14px; font: inherit; font-size: 14px; background: transparent; color: var(--ink);
+}
+.switcher-panel input:focus { outline: none; border-bottom-color: var(--accent); }
+.switcher-list { list-style: none; margin: 0; padding: 6px 0; max-height: 300px; overflow-y: auto; }
+.option {
+  display: flex; align-items: center; gap: 12px; padding: 9px 14px; cursor: pointer;
+}
+.option > .icon { font-size: 18px; color: var(--muted); }
+.option:hover, .option.is-active { background: var(--paper); }
+.option.is-active > .icon, .option:hover > .icon { color: var(--accent); }
+.option-text { display: grid; flex: 1; min-width: 0; }
+.option-name { font-weight: 600; font-size: 14px; }
+.option-sub { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.option-check { color: var(--accent); font-size: 16px; }
+.option-empty { padding: 12px 14px; color: var(--muted); font-size: 14px; }
+
+.company-card {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 32px;
+  border-top: 2px solid var(--ink); background: var(--surface);
+  padding: 18px 20px; margin-bottom: 22px;
+}
+.company-name { margin: 0; font-family: var(--display); font-size: 24px; font-weight: 700; line-height: 1.15; }
+.company-meta { margin: 6px 0 0; font-size: 13px; color: var(--muted); white-space: pre-wrap; }
+.company-docs-title { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.doc-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+
+.doc-link, .insp-pdf {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--ink); text-decoration: none; font-size: 14px;
+}
+.doc-link > span { font-family: var(--body); white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.doc-link .icon, .insp-pdf .icon { font-size: 16px; color: var(--accent); }
+.doc-link .ext, .insp-pdf .ext { font-size: 12px; color: var(--faint); }
+.doc-link:hover, .insp-pdf:hover { color: var(--accent); }
+.doc-link:hover span, .insp-pdf:hover span { text-decoration: underline; text-underline-offset: 3px; }
+.insp-pdf {
+  margin: -8px 0 20px; padding: 7px 12px; border: 1px solid var(--line); background: var(--surface); font-weight: 600;
+}
+.insp-pdf:hover { border-color: var(--accent); }
+
+.thumb-pdf {
+  font-family: var(--mono); font-size: 9.5px; color: var(--accent);
+  border: 1px solid currentColor; padding: 0 4px; line-height: 1.4;
+}
+
 /* ---------- result ---------- */
 
 .result { display: grid; gap: 56px; }
@@ -385,6 +451,9 @@ button { cursor: pointer; }
   .ask-row textarea { border-bottom: 2px solid var(--ink); }
   #ask-btn { align-self: stretch; margin-top: 12px; padding: 14px; }
   .ask-meta { flex-direction: column; }
+  .client-row { flex-wrap: wrap; gap: 8px; }
+  .company-card { grid-template-columns: 1fr; gap: 18px; }
+  .doc-link > span { white-space: normal; }
   .verdict, .notes { grid-template-columns: 1fr; gap: 36px; }
   .result { gap: 44px; }
   .lens-grid { grid-template-columns: 1fr; gap: 28px; }

@@ -131,6 +131,66 @@ def test_rate_limiter_memory_is_bounded():
     assert len(limiter._hits) <= RateLimiter.MAX_TRACKED_KEYS
 
 
+# ---------------------------------------------------------------- client isolation
+
+
+def test_company_outside_portfolio_is_refused(client):
+    """IDOR: a company ID that isn't in the user's portfolio gets the same 403 as an unknown one."""
+    for company in ("some-other-client", "brouwerij-van-de-leie-x"):
+        r = client.post("/api/ask", json={"question": "holiday pay", "company": company})
+        assert r.status_code == 403
+        assert company not in r.text
+
+
+def test_malformed_company_id_is_rejected(client):
+    r = client.post("/api/ask", json={"question": "holiday pay", "company": "../../etc/passwd"})
+    assert r.status_code == 422
+
+
+def test_other_clients_sources_are_never_used(make_engine):
+    """Client confidentiality: Vandaele's meal vouchers must not reach a Nordlicht answer or its prompt."""
+    llm = ScriptedLLM({"answer": "x", "answer_status": "no_answer"})
+    r = make_engine(llm).ask("What is the meal voucher value per working day?", company="nordlicht-software")
+    ids = {s.id for s in r.sources} | {x.id for x in r.excluded_sources}
+    assert not ids & {"DOC-013", "DOC-014", "E4"}
+    assert "Vandaele" not in "".join(llm.prompts)
+
+
+def test_client_sources_hidden_without_company(make_engine):
+    r = make_engine(ScriptedLLM({"answer": "x", "answer_status": "no_answer"})).ask(
+        "When do I pay double holiday pay for Brouwerij Van de Leie?")
+    assert not {s.id for s in r.sources} & {"DOC-010", "E2"}
+
+
+# ---------------------------------------------------------------- PDF documents
+
+
+def test_pdf_is_served_for_an_allowed_document(client):
+    r = client.get("/api/sources/DOC-013/pdf")
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "application/pdf"
+    assert r.content.startswith(b"%PDF")
+
+
+@pytest.mark.parametrize("bad_id", ["DOC-999", "..%2F..%2F.env", "DOC-013.pdf", "E2", "doc-013"])
+def test_pdf_endpoint_rejects_unknown_or_malformed_ids(client, bad_id):
+    """Path traversal / probing: anything but a known DOC-nnn is the same 404."""
+    r = client.get(f"/api/sources/{bad_id}/pdf")
+    assert r.status_code == 404
+    assert "%PDF" not in r.text
+
+
+def test_pdf_for_another_country_is_refused(client):
+    """DOC-005 applies to DE only; a BE user can't open it, even by guessing the ID."""
+    assert client.get("/api/sources/DOC-005/pdf").status_code == 404
+
+
+def test_companies_endpoint_lists_only_the_portfolio(client):
+    data = client.get("/api/companies").json()
+    assert {c["id"] for c in data["companies"]} == {
+        "brouwerij-van-de-leie", "vandaele-logistics", "nordlicht-software"}
+
+
 # ---------------------------------------------------------------- loader
 
 

@@ -1,6 +1,7 @@
 ---
 id: DOC-010
 title: Client note Brouwerij Van de Leie
+company: brouwerij-van-de-leie
 country: BE
 domain: client_notes
 version: "0.3"

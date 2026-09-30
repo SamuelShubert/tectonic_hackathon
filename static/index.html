@@ -22,9 +22,37 @@
     <section class="ask-section">
       <form class="ask" id="ask-form" autocomplete="off">
         <label for="question" class="ask-label">Ask a payroll question. See how sure you can be.</label>
+
+        <div class="client-row">
+          <span class="client-label" id="client-label">Client</span>
+          <div class="switcher" id="switcher">
+            <button type="button" class="switcher-btn" id="company-btn" aria-haspopup="listbox"
+              aria-expanded="false" aria-controls="company-panel">
+              <span id="company-btn-text">All clients</span>
+            </button>
+            <div class="switcher-panel" id="company-panel" hidden>
+              <input type="search" id="company-search" placeholder="Search by name, city, sector or PC"
+                aria-label="Search clients" autocomplete="off" role="combobox" aria-expanded="true"
+                aria-controls="company-list" aria-autocomplete="list">
+              <ul class="switcher-list" id="company-list" role="listbox" aria-labelledby="client-label"></ul>
+            </div>
+          </div>
+        </div>
+
+        <section class="company-card" id="company-card" hidden aria-labelledby="company-name">
+          <div class="company-main">
+            <p class="company-name" id="company-name"></p>
+            <p class="company-meta" id="company-meta"></p>
+          </div>
+          <div class="company-docs">
+            <p class="company-docs-title">Client documents</p>
+            <ul class="doc-links" id="company-docs"></ul>
+          </div>
+        </section>
+
         <div class="ask-row">
           <textarea id="question" name="question" rows="2" maxlength="500"
-            placeholder="When do I pay double holiday pay for Brouwerij Van de Leie?"></textarea>
+            placeholder="Type a question, or pick one below"></textarea>
           <button type="submit" id="ask-btn">Check answer</button>
         </div>
         <div class="ask-meta">

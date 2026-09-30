@@ -19,6 +19,7 @@ Security decisions:
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from pathlib import Path
 
@@ -30,9 +31,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.security import BodySizeLimitMiddleware, RateLimiter, SecurityHeadersMiddleware
-from engine import InvalidQuestion, TrustEngine, build_engine
+from engine import CompanyNotAllowed, InvalidQuestion, TrustEngine, build_engine
 from engine.config import Settings, load_settings
-from engine.models import AskResponse
+from engine.models import COMPANY_PATTERN, AskResponse
 
 log = logging.getLogger("trustlens.api")
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -42,6 +43,12 @@ MAX_BODY_BYTES = 4 * 1024
 class AskRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")  # any extra field (user, country...) = rejected
     question: str = Field(min_length=3, max_length=500)
+    # Optional client. Validated here for shape, and by the engine against the user's portfolio.
+    company: str | None = Field(default=None, pattern=COMPANY_PATTERN)
+
+
+# Source IDs served as PDF: a strict shape, looked up in a server-side map, never used as a path.
+PDF_ID = re.compile(r"^DOC-\d{3}$")
 
 
 def _error(status: int, message: str, request_id: str) -> JSONResponse:
@@ -84,6 +91,46 @@ def create_app(engine: TrustEngine | None = None, settings: Settings | None = No
         return {"user": settings.demo_user, "country": settings.demo_country,
                 "as_of_date": settings.as_of_date.isoformat()}
 
+    @app.get("/api/companies")
+    def companies() -> dict:
+        """The companies in the current user's portfolio, with their client documents and example questions."""
+        kb, ctx = engine.knowledge_base, engine.context
+        result = []
+        for company in kb.companies_for(ctx.user):
+            consultant = kb.experts.get(company.consultant)
+            documents = [
+                {"id": s.id, "title": s.title, "has_pdf": s.id in kb.pdf_files}
+                for s in sorted(kb.sources.values(), key=lambda s: s.id)
+                if s.company == company.id and s.id in kb.pdf_files
+            ]
+            result.append({
+                **company.model_dump(exclude={"consultant"}),
+                "consultant": consultant.name if consultant else company.consultant.replace(".", " ").title(),
+                "documents": documents,
+            })
+        return {"general_questions": list(kb.general_questions), "companies": result}
+
+    @app.get("/api/sources/{source_id}/pdf", include_in_schema=False)
+    def source_pdf(source_id: str):
+        """Open one document as PDF.
+
+        Authorization is enforced here, not in the UI: the document must exist, apply to the
+        user's country (or all countries), and belong to no client or to a client in the
+        user's portfolio. Every refusal is the same 404, so IDs can't be probed.
+        """
+        kb, ctx = engine.knowledge_base, engine.context
+        source = kb.sources.get(source_id) if PDF_ID.fullmatch(source_id) else None
+        path = kb.pdf_files.get(source_id) if source else None
+        allowed = (
+            source is not None and path is not None
+            and source.country in (ctx.country, "ALL")
+            and kb.can_access(ctx.user, source.company)
+        )
+        if not allowed:
+            return JSONResponse(status_code=404, content={"detail": "Document not found"})
+        return FileResponse(path, media_type="application/pdf", filename=f"{source.id}.pdf",
+                            content_disposition_type="inline")
+
     @app.post("/api/ask", response_model=AskResponse)
     def ask(body: AskRequest, request: Request):
         request_id = uuid.uuid4().hex[:12]
@@ -91,9 +138,12 @@ def create_app(engine: TrustEngine | None = None, settings: Settings | None = No
         if not limiter.allow(client):
             return _error(429, "Too many requests, try again in a minute.", request_id)
         try:
-            response = engine.ask(body.question)
+            response = engine.ask(body.question, company=body.company)
         except InvalidQuestion as exc:
             return _error(422, str(exc), request_id)
+        except CompanyNotAllowed:
+            log.warning("ask request_id=%s denied: company not in portfolio", request_id)
+            return _error(403, "You don't have access to that company.", request_id)
         log.info("ask request_id=%s chars=%d confidence=%s",
                  request_id, len(body.question), response.confidence.level.value)
         return response

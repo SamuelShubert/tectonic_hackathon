@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -35,7 +36,7 @@ import yaml
 from pydantic import ValidationError
 
 from .config import RulesConfig
-from .models import Expert, Source, SourceStatus, SourceType
+from .models import Company, Expert, Source, SourceStatus, SourceType
 
 log = logging.getLogger(__name__)
 
@@ -52,6 +53,23 @@ class DataError(RuntimeError):
 class KnowledgeBase:
     sources: Mapping[str, Source]
     experts: Mapping[str, Expert]
+    companies: Mapping[str, Company] = MappingProxyType({})
+    # user id -> company ids that user may work on (server-side authorization data)
+    portfolios: Mapping[str, frozenset[str]] = MappingProxyType({})
+    general_questions: tuple[str, ...] = ()
+    # source id -> PDF file, resolved inside data_dir/pdf at startup (never built from a request)
+    pdf_files: Mapping[str, Path] = MappingProxyType({})
+
+    @property
+    def pdf_ids(self) -> frozenset[str]:
+        return frozenset(self.pdf_files)
+
+    def companies_for(self, user: str) -> list[Company]:
+        allowed = self.portfolios.get(user, frozenset())
+        return [c for cid, c in self.companies.items() if cid in allowed]
+
+    def can_access(self, user: str, company_id: str | None) -> bool:
+        return company_id is None or company_id in self.portfolios.get(user, frozenset())
 
 
 # --------------------------------------------------------------------------
@@ -126,6 +144,11 @@ def _truncate(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[:limit]
 
 
+def _company(value: Any) -> str | None:
+    text = str(value or "").strip().lower()
+    return text or None
+
+
 # --------------------------------------------------------------------------
 # Raw record adapters (the only place that knows the raw file formats)
 # --------------------------------------------------------------------------
@@ -141,6 +164,7 @@ def _raw_documents(data_dir: Path, rules: RulesConfig) -> Iterator[dict[str, Any
                 "title": str(meta.get("title") or path.stem)[:200],
                 "source_type": rules.doc_type_by_id.get(doc_id, SourceType.UNKNOWN),
                 "country": str(meta.get("country", "")).strip().upper(),
+                "company": _company(meta.get("company")),
                 "owner": _owner(meta.get("owner")),
                 "last_updated": _as_date(meta.get("last_updated")),
                 "status": _status(meta.get("status")),
@@ -163,6 +187,7 @@ def _raw_chats(data_dir: Path) -> Iterator[dict[str, Any]]:
                     "title": f"Teams #{channel} message by {msg.get('author', 'unknown')}"[:200],
                     "source_type": SourceType.CHAT,
                     "country": country,
+                    "company": _company(msg.get("company")),
                     "owner": _owner(msg.get("author")),
                     "last_updated": _as_date(msg["date"]),
                     "status": SourceStatus.INFORMAL,
@@ -182,6 +207,7 @@ def _raw_emails(data_dir: Path) -> Iterator[dict[str, Any]]:
                     "title": f"Email: {mail.get('subject', '(no subject)')}"[:200],
                     "source_type": SourceType.EMAIL,
                     "country": str(mail.get("country", "BE")).upper(),
+                    "company": _company(mail.get("company")),
                     "owner": _owner(mail.get("from")),
                     "last_updated": _as_date(mail["date"]),
                     "status": SourceStatus.INFORMAL,
@@ -204,6 +230,42 @@ def _raw_experts(data_dir: Path) -> Iterator[dict[str, Any]]:
                 "leaving_date": raw.get("leaving_date"),
                 "left_date": raw.get("left_date"),
             }
+
+
+_PDF_NAME = re.compile(r"^(DOC-\d{3})\.pdf$")
+
+
+def _load_companies(data_dir: Path) -> tuple[dict[str, Company], dict[str, frozenset[str]], tuple[str, ...]]:
+    files = list(_safe_files(data_dir, "companies.json"))
+    if not files:
+        return {}, {}, ()
+    try:
+        raw = _read_json(files[0])
+        companies: dict[str, Company] = {}
+        for item in raw.get("companies", []):
+            company = Company.model_validate({k: v for k, v in item.items() if not k.startswith("_")})
+            if company.id in companies:
+                raise DataError(f"Duplicate company id: {company.id}")
+            companies[company.id] = company
+        portfolios = {str(user): frozenset(str(c) for c in ids) for user, ids in raw.get("portfolios", {}).items()}
+        for user, ids in portfolios.items():
+            unknown = ids - companies.keys()
+            if unknown:
+                raise DataError(f"Portfolio of {user} names unknown companies: {sorted(unknown)}")
+        questions = tuple(str(q)[:500] for q in raw.get("general_questions", []))
+    except (ValidationError, KeyError, TypeError, ValueError, AttributeError) as exc:
+        raise DataError(f"Invalid companies.json: {exc}") from exc
+    return companies, portfolios, questions
+
+
+def _load_pdfs(data_dir: Path, source_ids: set[str]) -> dict[str, Path]:
+    """Map source id -> PDF path. Only files named DOC-nnn.pdf for a known source are served."""
+    pdfs: dict[str, Path] = {}
+    for path in _safe_files(data_dir / "pdf", "*.pdf"):
+        match = _PDF_NAME.match(path.name)
+        if match and match.group(1) in source_ids:
+            pdfs[match.group(1)] = path
+    return pdfs
 
 
 # --------------------------------------------------------------------------
@@ -256,6 +318,20 @@ def load_knowledge_base(data_dir: Path, rules: RulesConfig) -> KnowledgeBase:
     if not sources:
         raise DataError("No valid sources loaded")
 
-    log.info("Loaded %d sources and %d experts", len(sources), len(experts))
+    companies, portfolios, general_questions = _load_companies(data_dir)
+    for source in sources.values():
+        if source.company and source.company not in companies:
+            raise DataError(f"Source {source.id} names unknown company {source.company}")
+    pdf_files = _load_pdfs(data_dir, set(sources))
+
+    log.info("Loaded %d sources, %d experts, %d companies, %d PDFs",
+             len(sources), len(experts), len(companies), len(pdf_files))
     # MappingProxyType: read-only views, so nothing can mutate the KB later.
-    return KnowledgeBase(sources=MappingProxyType(sources), experts=MappingProxyType(experts))
+    return KnowledgeBase(
+        sources=MappingProxyType(sources),
+        experts=MappingProxyType(experts),
+        companies=MappingProxyType(companies),
+        portfolios=MappingProxyType(portfolios),
+        general_questions=general_questions,
+        pdf_files=MappingProxyType(pdf_files),
+    )

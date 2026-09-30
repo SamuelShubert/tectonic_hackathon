@@ -36,14 +36,16 @@ def test_q2_exception_in_informal_sources_with_leaving_owner_is_medium(make_engi
         "conflicts": [],
         "exceptions": [{"source_ids": ["E2", "DOC-010"], "summary": "Company agreement advances payment to April"}],
     })
-    r = make_engine(llm).ask("When do I pay double holiday pay for Brouwerij Van de Leie?")
+    r = make_engine(llm).ask("When do I pay double holiday pay for Brouwerij Van de Leie?",
+                             company="brouwerij-van-de-leie")
     assert r.confidence.level == ConfidenceLevel.MEDIUM
     text = " ".join(r.confidence.reasons)
     assert "informal sources" in text
     assert "Jens Wouters leaves on 2026-10-15" in text
     assert "Capture this knowledge" in r.confidence.action
-    # E2 is external, so routing falls back to the BE payroll expert.
-    assert r.ask_expert.id == "sofie.maes"
+    # Jens (leaving) owns the cited DOC-010: ask him first, then the BE payroll expert.
+    assert r.ask_expert.id == "jens.wouters"
+    assert "15 Oct" in r.ask_expert.why and "Sofie Maes" in r.ask_expert.why
 
 
 def test_q3_unresolved_conflict_is_low(make_engine):

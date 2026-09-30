@@ -11,10 +11,10 @@ from .config import Settings, load_rules
 from .llm import GeminiClient, LLMClient, OfflineClient, OpenAICompatClient
 from .loader import load_knowledge_base
 from .models import Context
-from .pipeline import InvalidQuestion, TrustEngine
+from .pipeline import CompanyNotAllowed, InvalidQuestion, TrustEngine
 from .retrieval import KeywordRetriever
 
-__all__ = ["build_engine", "TrustEngine", "InvalidQuestion"]
+__all__ = ["build_engine", "TrustEngine", "InvalidQuestion", "CompanyNotAllowed"]
 
 
 def build_engine(settings: Settings, llm: LLMClient | None = None) -> TrustEngine:

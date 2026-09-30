@@ -37,6 +37,11 @@ class InvalidQuestion(ValueError):
     pass
 
 
+class CompanyNotAllowed(PermissionError):
+    """The company is unknown or not in this user's portfolio. Deliberately one error for both,
+    so the API cannot be used to discover which company IDs exist."""
+
+
 def sanitise_question(question: str) -> str:
     """Normalise unicode, drop control/invisible characters, collapse whitespace.
 
@@ -72,11 +77,24 @@ class TrustEngine:
     def context(self) -> Context:
         return self._ctx
 
-    def ask(self, question: str) -> AskResponse:
-        question = sanitise_question(question)
-        ctx, kb, cfg = self._ctx, self._kb, self._rules
+    @property
+    def knowledge_base(self) -> KnowledgeBase:
+        return self._kb
 
-        candidates = self._retriever.retrieve(question, k=cfg.retrieval_top_k)
+    def ask(self, question: str, company: str | None = None) -> AskResponse:
+        question = sanitise_question(question)
+        kb, cfg = self._kb, self._rules
+        # Authorization: the company must be in the (server-side) portfolio of the context user.
+        if not kb.can_access(self._ctx.user, company):
+            raise CompanyNotAllowed()
+        ctx = self._ctx.model_copy(update={"company": company})
+        client = kb.companies.get(company) if company else None
+
+        # Client isolation: general sources plus the selected client's own sources, nothing else.
+        def visible(source) -> bool:
+            return source.company is None or source.company == company
+
+        candidates = self._retriever.retrieve(question, k=cfg.retrieval_top_k, visible=visible)
         assessed = [(s, assess_source(s, ctx, kb, cfg)) for s in candidates]
 
         usable_items = [(s, a) for s, a in assessed if not a.excluded]
@@ -86,7 +104,8 @@ class TrustEngine:
         ]
         usable = {a.id: a for _, a in usable_items}
 
-        answer = ask_llm(self._llm, question, usable_items, cfg.max_content_chars_per_source)
+        answer = ask_llm(self._llm, question, usable_items, cfg.max_content_chars_per_source,
+                         client.name if client else None)
         expert = select_expert(answer, usable, ctx, kb, cfg)
         confidence = compute_confidence(answer, usable, expert, ctx, kb)
 

@@ -12,6 +12,10 @@ fast, deterministic and good enough.
 Country filtering is deliberately NOT done here: sources for the wrong
 country are retrieved and then shown as excluded, with the reason. Visible
 filtering is explainable; silent filtering is a black box.
+
+Client isolation IS done here (the `visible` predicate): another client's
+sources are confidential, so they are never candidates, never sent to the
+LLM and never shown. That is an access rule, not a relevance judgement.
 """
 
 from __future__ import annotations
@@ -19,7 +23,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
-from typing import Iterable, Protocol
+from typing import Callable, Iterable, Protocol
 
 from .models import Source
 
@@ -45,7 +49,8 @@ def tokenize(text: str) -> list[str]:
 
 
 class Retriever(Protocol):
-    def retrieve(self, question: str, k: int) -> list[Source]: ...
+    def retrieve(self, question: str, k: int,
+                 visible: Callable[[Source], bool] | None = None) -> list[Source]: ...
 
 
 class KeywordRetriever:
@@ -56,13 +61,16 @@ class KeywordRetriever:
         n = len(self._sources)
         self._idf = {tok: math.log((n + 1) / (df + 0.5)) for tok, df in doc_freq.items()}
 
-    def retrieve(self, question: str, k: int) -> list[Source]:
+    def retrieve(self, question: str, k: int,
+                 visible: Callable[[Source], bool] | None = None) -> list[Source]:
         # Cap query tokens: bounds CPU per request regardless of input.
         query = set(tokenize(question)[:MAX_QUESTION_TOKENS])
         if not query:
             return []
         scored = []
         for source in self._sources:
+            if visible is not None and not visible(source):
+                continue
             overlap = query & self._tokens[source.id]
             if overlap:
                 score = sum(self._idf.get(tok, 0.0) for tok in overlap)

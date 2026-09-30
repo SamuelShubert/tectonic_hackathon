@@ -1,0 +1,59 @@
+{
+  "_notice": "SYNTHETIC DEMO DATA. All companies are fictional.",
+  "general_questions": [
+    "What percentage is Belgian double holiday pay and when is it paid?",
+    "How long is sick pay continued at 100% for a Belgian employee?",
+    "When is the end-of-year premium paid for PC 200 clients this year?",
+    "What is the payroll cutoff in December in Belgium?"
+  ],
+  "portfolios": {
+    "arne.goossens": ["brouwerij-van-de-leie", "vandaele-logistics", "nordlicht-software"]
+  },
+  "companies": [
+    {
+      "id": "brouwerij-van-de-leie",
+      "name": "Brouwerij Van de Leie NV",
+      "city": "Kortrijk",
+      "country": "BE",
+      "sector": "Brewery",
+      "joint_committee": "PC 118",
+      "employees": 140,
+      "consultant": "jens.wouters",
+      "questions": [
+        "When do I pay double holiday pay for Brouwerij Van de Leie?",
+        "What is the December payroll cutoff for Brouwerij Van de Leie?",
+        "How long is sick pay continued at 100% at Brouwerij Van de Leie?"
+      ]
+    },
+    {
+      "id": "vandaele-logistics",
+      "name": "Vandaele Logistics NV",
+      "city": "Antwerp",
+      "country": "BE",
+      "sector": "Transport and logistics",
+      "joint_committee": "PC 140.03",
+      "employees": 320,
+      "consultant": "arne.goossens",
+      "questions": [
+        "What is the meal voucher value per working day at Vandaele Logistics?",
+        "What night shift premium does Vandaele Logistics pay?",
+        "When is double holiday pay paid at Vandaele Logistics?"
+      ]
+    },
+    {
+      "id": "nordlicht-software",
+      "name": "Nordlicht Software BV",
+      "city": "Ghent",
+      "country": "BE",
+      "sector": "Software development",
+      "joint_committee": "PC 200",
+      "employees": 85,
+      "consultant": "arne.goossens",
+      "questions": [
+        "What home-working allowance does Nordlicht Software pay per month?",
+        "When is the end-of-year premium paid for Nordlicht Software this year?",
+        "What percentage is double holiday pay at Nordlicht Software?"
+      ]
+    }
+  ]
+}

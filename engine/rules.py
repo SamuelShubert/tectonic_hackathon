@@ -175,6 +175,8 @@ def assess_source(source: Source, ctx: Context, kb: KnowledgeBase, cfg: RulesCon
         title=source.title,
         source_type=source.source_type,
         country=source.country,
+        company=source.company,
+        has_pdf=source.id in kb.pdf_ids,
         owner=source.owner,
         owner_status=owner_status(source, ctx, kb),
         last_updated=source.last_updated,

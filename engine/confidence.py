@@ -85,6 +85,21 @@ def select_expert(
     if not candidates:
         return None
     expert = min(candidates, key=priority)
+
+    # A leaving owner of the answer's sources may be the only one who knows it:
+    # ask them first, while they're still here, then the regular expert.
+    relevant = ([anchor] if anchor else []) + [usable[i] for i in answer.cited_source_ids if i in usable]
+    for source in relevant:
+        holder = kb.experts.get(source.owner or "")
+        if (source.owner_status == OwnerStatus.LEAVING and holder
+                and holder.leaving_date and holder.leaving_date >= ctx.as_of_date):
+            leaves = f"{holder.leaving_date.day} {holder.leaving_date:%b}"
+            return ExpertRef(
+                id=holder.id, name=holder.name, role=holder.role,
+                why=(f"Only knowledge holder of {source.id}: ask before {leaves}, when they leave. "
+                     f"Then {expert.name} ({expert.role})."),
+            )
+
     if anchor:
         problem = _OWNER_PROBLEM.get(anchor.owner_status, "cannot be verified by its owner")
         why = f"{anchor.id} {problem}; {expert.name} covers {ctx.country}"
