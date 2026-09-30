@@ -57,8 +57,8 @@ class KnowledgeBase:
     # user id -> company ids that user may work on (server-side authorization data)
     portfolios: Mapping[str, frozenset[str]] = MappingProxyType({})
     general_questions: tuple[str, ...] = ()
-    # source id -> PDF file, resolved inside data_dir/pdf at startup (never built from a request)
-    pdf_files: Mapping[str, Path] = MappingProxyType({})
+    # source id -> PDF bytes, read once at startup from data_dir/pdf. Requests never touch the file system.
+    pdf_files: Mapping[str, bytes] = MappingProxyType({})
 
     @property
     def pdf_ids(self) -> frozenset[str]:
@@ -258,13 +258,13 @@ def _load_companies(data_dir: Path) -> tuple[dict[str, Company], dict[str, froze
     return companies, portfolios, questions
 
 
-def _load_pdfs(data_dir: Path, source_ids: set[str]) -> dict[str, Path]:
-    """Map source id -> PDF path. Only files named DOC-nnn.pdf for a known source are served."""
-    pdfs: dict[str, Path] = {}
+def _load_pdfs(data_dir: Path, source_ids: set[str]) -> dict[str, bytes]:
+    """Map source id -> PDF bytes. Only files named DOC-nnn.pdf for a known source are loaded."""
+    pdfs: dict[str, bytes] = {}
     for path in _safe_files(data_dir / "pdf", "*.pdf"):
         match = _PDF_NAME.match(path.name)
         if match and match.group(1) in source_ids:
-            pdfs[match.group(1)] = path
+            pdfs[match.group(1)] = path.read_bytes()  # size-capped by _safe_files
     return pdfs
 
 

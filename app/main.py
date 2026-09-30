@@ -26,7 +26,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -120,16 +120,17 @@ def create_app(engine: TrustEngine | None = None, settings: Settings | None = No
         """
         kb, ctx = engine.knowledge_base, engine.context
         source = kb.sources.get(source_id) if PDF_ID.fullmatch(source_id) else None
-        path = kb.pdf_files.get(source_id) if source else None
+        pdf = kb.pdf_files.get(source_id) if source else None
         allowed = (
-            source is not None and path is not None
+            source is not None and pdf is not None
             and source.country in (ctx.country, "ALL")
             and kb.can_access(ctx.user, source.company)
         )
         if not allowed:
             return JSONResponse(status_code=404, content={"detail": "Document not found"})
-        return FileResponse(path, media_type="application/pdf", filename=f"{source.id}.pdf",
-                            content_disposition_type="inline")
+        # Served from memory (loaded at startup): no file is opened for a request.
+        return Response(content=pdf, media_type="application/pdf",
+                        headers={"Content-Disposition": f'inline; filename="{source.id}.pdf"'})
 
     @app.post("/api/ask", response_model=AskResponse)
     def ask(body: AskRequest, request: Request):
